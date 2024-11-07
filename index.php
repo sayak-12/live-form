@@ -1,44 +1,106 @@
 <?php
+session_start();
+include 'db.php';
+if (!isset($_SESSION['man_no'])) {
+   header('location: login.php');
+   exit();
+}
+$man = $_SESSION['man_no'];
+$bday = $_SESSION['dob'];
+$stmt = $conn->prepare("select * from emp where `MA NO`= ? and `DOB`= ? and RELATION = 'EMP'");
+$stmt->bind_param("ss", $man, $bday);
+$stmt->execute();
+$resultemp = $stmt->get_result()->fetch_assoc();
+$stmt1 = $conn->prepare("select * from emp where `MA NO`= ? and RELATION = 'SPOUSE'");
+$stmt1->bind_param("s", $man);
+$stmt1->execute();
+$resultspo = $stmt1->get_result()->fetch_assoc();
 // Function to get the client IP address
 echo 'User IP Address - ' . $_SERVER['REMOTE_ADDR'];
 $ip = $_SERVER['REMOTE_ADDR'];
-// Handle form submission to process the file upload and display all form data
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['imagesub'])) {
-   // Check if the image file is uploaded
-   if (isset($_FILES['image_file'])) {
-      $image = $_FILES['image_file'];
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
+   $_SESSION['type'] = $_POST['check'];
+   $_SESSION['name_employee'] = $_POST['name_employee'] ?? null;
+   $_SESSION['aadhar_no_employee'] = $_POST['aadhar_no_employee'] ?? null;
+   $_SESSION['address_employee'] = $_POST['address_employee'] ?? null;
+   $_SESSION['mobile_employee'] = $_POST['mobile_employee'] ?? null;
+   $_SESSION['email_employee'] = $_POST['email_employee'] ?? null;
+   $_SESSION['whatsapp_employee'] = $_POST['whatsapp_employee'] ?? null;
+   $_SESSION['dor_employee'] = $_POST['dor_employee'] ?? null;
+   $_SESSION['desig_employee'] = $_POST['desig_employee'] ?? null;
+   $_SESSION['cadre_employee'] = $_POST['cadre_employee'] ?? null;
+   $_SESSION['name_spouse'] = $_POST['name_spouse'] ?? null;
+   $_SESSION['aadhar_no_spouse'] = $_POST['aadhar_no_spouse'] ?? null;
+   $_SESSION['dob_spouse'] = $_POST['pan_no_spouse'] ?? null;
+   $_SESSION['mobile_spouse'] = $_POST['mobile_spouse'] ?? null;
+   $_SESSION['dod_employee'] = $_POST['dod_employee'] ?? null;
+   if (isset($_FILES['deathcert'])) {
+      // Directory to upload the file
+      $uploadDir = 'death_certificate/';
 
-      // Define the upload directory
-      $target_dir = "capture_images/";
-      $target_file = $target_dir . uniqid() . ".png";
+      // Ensure the directory exists
+      if (!is_dir($uploadDir)) {
+         mkdir($uploadDir, 0777, true);
+      }
+
+      // Generate a unique filename to prevent overwriting
+      $fileName = basename($_FILES['deathcert']['name']);
+      $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+      $uniqueFileName = $uploadDir . uniqid('death_cert_', true) . '.' . $fileExtension;
 
       // Move the uploaded file to the target directory
-      if (move_uploaded_file($image['tmp_name'], $target_file)) {
-         echo "Image uploaded successfully. File path: " . $target_file . "<br>";
+      if (move_uploaded_file($_FILES['deathcert']['tmp_name'], $uniqueFileName)) {
+         // Store the file path in the session
+         $_SESSION['death_certificate'] = $uniqueFileName;
       } else {
-         echo "Error: Failed to upload the image.<br>";
+         // Handle error if file upload fails
+         echo "Failed to upload the death certificate.";
       }
    } else {
-      echo "Error: No image file provided.<br>";
+      // If no file is uploaded, set session to null or handle accordingly
+      $_SESSION['death_certificate'] = null;
    }
-
-   // Echo all form fields received from the POST request
-   $fields = ['man_no', 'birth_date', 'name', 'aadhar_no', 'pan_no', 'mobile', 'ip'];
-   foreach ($fields as $field) {
-      if (isset($_POST[$field])) {
-         echo ucfirst(str_replace("_", " ", $field)) . ": " . htmlspecialchars($_POST[$field]) . "<br>";
-      } else {
-         echo ucfirst(str_replace("_", " ", $field)) . ": Not provided<br>";
-      }
-   }
+   header('Location: capture.php');
+   exit();
 }
+// Handle form submission to process the file upload and display all form data
+// if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['imagesub'])) {
+//    // Check if the image file is uploaded
+//    if (isset($_FILES['image_file'])) {
+//       $image = $_FILES['image_file'];
+
+//       // Define the upload directory
+//       $target_dir = "capture_images/";
+//       $target_file = $target_dir . uniqid() . ".png";
+
+//       // Move the uploaded file to the target directory
+//       if (move_uploaded_file($image['tmp_name'], $target_file)) {
+//          echo "Image uploaded successfully. File path: " . $target_file . "<br>";
+//       } else {
+//          echo "Error: Failed to upload the image.<br>";
+//       }
+//    } else {
+//       echo "Error: No image file provided.<br>";
+//    }
+
+//    // Echo all form fields received from the POST request
+//    $fields = ['man_no', 'birth_date', 'name', 'aadhar_no', 'pan_no', 'mobile', 'ip'];
+//    foreach ($fields as $field) {
+//       if (isset($_POST[$field])) {
+//          echo ucfirst(str_replace("_", " ", $field)) . ": " . htmlspecialchars($_POST[$field]) . "<br>";
+//       } else {
+//          echo ucfirst(str_replace("_", " ", $field)) . ": Not provided<br>";
+//       }
+//    }
+// }
+
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-   <title>Live Photo Capture Using Webcam</title>
+   <title>Fill Additional Details</title>
    <script src="./jquery-3.7.1.js"></script>
    <script type="text/javascript" src="./webcam.js"></script>
    <link rel="stylesheet" href="./bootstrap/css/bootstrap.min.css">
@@ -85,14 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['imagesub'])) {
 
 <style>
    /* Styles for each form section */
-   .form-section {
-      display: none;
-   }
-
-   .form-section.active {
-      display: flex;
-      flex-direction: column;
-   }
 
    .checkflex label {
       margin: 0;
@@ -106,110 +160,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['imagesub'])) {
 
 <body>
    <div class="container">
-      <!-- First Section: MAN Number and Birth Date -->
-      <div id="section1" class="form-section active">
-         <h3 class="h4 text-center">Step 1: Enter MAN No. and Birth Date</h3>
-         <form id="section1Form">
-            <label>MAN No.</label>
-            <input type="text" class="form-control" name="man_no" required>
-            <label>Birth Date <span style="color:red;">(Format: 01-01-2000)</span></label>
-            <input type="text" class="form-control" name="birth_date" required>
-            <button type="button" class="btn btn-primary col-12 my-3" onclick="goToNextSection(2)">Confirm & Proceed</button>
+      <!-- Second Section: Name, Aadhar No, PAN No, and Mobile -->
+      <div id="section2" class="form-section">
+         <h3 class="h4 text-center">Step 2: Enter Additional Details</h3>
+         <form id="section2Form" name="myform" method="post" enctype="multipart/form-data">
+            <label>Life Certificate to be filled for:</label>
+            <div class="checkflex d-flex mb-3" style="flex-wrap:wrap; gap:20px;">
+               <div class="fieldcheck col-lg-4 col-12">
+                  <input type="radio" name="check" id="check1" class="mr-2" onclick="toggleSections()" value="both">
+                  <label for="check1">Both Employee and Spouse</label>
+               </div>
+               <div class="fieldcheck col-lg-3 col-12">
+                  <input type="radio" name="check" id="check2" class="mr-2" onclick="toggleSections()" value="employee">
+                  <label for="check2">Only Employee</label>
+               </div>
+               <div class="fieldcheck col-lg-3 col-12">
+                  <input type="radio" name="check" id="check3" class="mr-2" onclick="toggleSections()" value="spouse">
+                  <label for="check3">Only Spouse</label>
+               </div>
+            </div>
+
+            <!-- Employee Section -->
+            <div class="employee mb-3" style="display: none;">
+               <label>Beneficiary Name</label>
+               <input type="text" class="form-control" name="name_employee" value="<?= $resultemp['BENEFICIARY NAME'] ?>" readonly required>
+               <label>Aadhar No.</label>
+               <input type="text" class="form-control" name="aadhar_no_employee" required>
+               <label>MAN No.</label>
+               <input type="text" class="form-control" name="man_no_employee" value="<?= $man ?>" required readonly>
+               <label>Date of Birth</label>
+               <input type="text" class="form-control" name="dob_employee" value="<?= $bday ?>" required readonly>
+               <label>Date of Retirement</label>
+               <input type="text" class="form-control" name="dor_employee" value="<?= $resultemp['DOR'] ?>" required readonly>
+               <label>Designation</label>
+               <input type="text" class="form-control" name="desig_employee" value="<?= $resultemp['Designation'] ?>" required readonly>
+               <label>Category</label>
+               <input type="text" class="form-control" name="cadre_employee" value="<?= $resultemp['CADRE'] ?>" required readonly>
+            </div>
+
+
+            <!-- Spouse Section -->
+            <div class="spouse mb-3" style="display: none;">
+               <hr>
+               <label>Beneficiary Name (Spouse)</label>
+               <input type="text" class="form-control" name="name_spouse" value="<?= $resultspo['BENEFICIARY NAME'] ?? "" ?>" readonly=<?= $resultspo['BENEFICIARY NAME'] ? true : false ?> required>
+               <label>Aadhar No. (Spouse)</label>
+               <input type="text" class="form-control" name="aadhar_no_spouse" required>
+               <label>Date of Birth (Spouse)</label>
+               <input type="text" class="form-control" name="dob_spouse" value="<?= $resultspo['DOB'] ?? "" ?>" readonly=<?= $resultspo['DOB'] ? true : false ?> required>
+               <label>Mobile (Spouse)</label>
+               <input type="text" class="form-control" name="mobile_spouse" value="<?= $resultspo['MOBILE NO'] ?? "" ?>" required>
+            </div>
+
+
+            <!-- Only Spouse Section -->
+            <div class="onlyspouse mb-3" style="display: none;">
+               <hr>
+               <h4 class="h5 text-center">Details of Death of Employee</h4>
+               <label>Name of Deceased Employee: </label>
+               <input type="text" class="form-control" name="name1_employee" value="<?= $resultemp['BENEFICIARY NAME'] ?>" readonly required>
+               <label>Ex MAN No.</label>
+               <input type="text" class="form-control" name="man_no1_employee" value="<?= $man ?>" required readonly>
+               <label>Date of Death</label>
+               <input type="date" class="form-control" name="dod_employee" required>
+               <label for="death" style="color:red;">Please attach the death certificate of Registered Employee:</label><br>
+               <input type="file" name="deathcert" id="death" required>
+            </div>
+
+            <!-- Address Section -->
+            <div class="mb-3 address" style="display:none;">
+               <hr>
+               <label>Present Address:</label><br>
+               <input type="text" class="form-control" name="address_employee" value="<?= $resultemp['ADDRESS'] ?>" required readonly>
+               <label>Mobile Number:</label><br>
+               <input type="text" class="form-control" name="mobile_employee" value="<?= $resultemp['MOBILE NO'] ?>" required>
+               <label>Email Address:</label><br>
+               <input type="text" class="form-control" name="email_employee" value="<?= $resultemp['EMAIL ADDRESS'] ? $resultemp['EMAIL ADDRESS'] : "" ?>">
+               <label>whatsapp Number:</label><br>
+               <input type="text" class="form-control" name="whatsapp_employee">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" name="proceed">Confirm and Proceed</button>
          </form>
       </div>
 
-      <!-- Second Section: Name, Aadhar No, PAN No, and Mobile -->
-      <div id="section2" class="form-section">
-   <h3 class="h4 text-center">Step 2: Enter Additional Details</h3>
-   <form id="section2Form">
-      <label>Life Certificate to be filled for:</label>
-      <div class="checkflex d-flex mb-3" style="flex-wrap:wrap; gap:20px;">
-         <div class="fieldcheck col-lg-4 col-12">
-            <input type="radio" name="check" id="check1" class="mr-2" onclick="toggleSections()" value="both">
-            <label for="check1">Both Employee and Spouse</label>
-         </div>
-         <div class="fieldcheck col-lg-3 col-12">
-            <input type="radio" name="check" id="check2" class="mr-2" onclick="toggleSections()" value="employee">
-            <label for="check2">Only Employee</label>
-         </div>
-         <div class="fieldcheck col-lg-3 col-12">
-            <input type="radio" name="check" id="check3" class="mr-2" onclick="toggleSections()" value="spouse">
-            <label for="check3">Only Spouse</label>
-         </div>
-      </div>
-      
-      <!-- Employee Section -->
-      <div class="employee mb-3" style="display: none;">
-         <label>Beneficiary Name</label>
-         <input type="text" class="form-control" name="name_employee" value="Sayak Raha" readonly required>
-         <label>Aadhar No.</label>
-         <input type="text" class="form-control" name="aadhar_no_employee" required>
-         <label>PAN No.</label>
-         <input type="text" class="form-control" name="pan_no_employee" required>
-         <label>Mobile</label>
-         <input type="text" class="form-control" name="mobile_employee" value="9007382357" required>
-      </div>
-
-      
-      <!-- Spouse Section -->
-      <div class="spouse mb-3" style="display: none;">
-         <label>Beneficiary Name (Spouse)</label>
-         <input type="text" class="form-control" name="name_spouse" value="Sayak Raha" readonly required>
-         <label>Aadhar No. (Spouse)</label>
-         <input type="text" class="form-control" name="aadhar_no_spouse" required>
-         <label>PAN No. (Spouse)</label>
-         <input type="text" class="form-control" name="pan_no_spouse" required>
-         <label>Mobile (Spouse)</label>
-         <input type="text" class="form-control" name="mobile_spouse" value="9007382357" required>
-      </div>
-
-
-      <!-- Only Spouse Section -->
-      <div class="onlyspouse mb-3" style="display: none;">
-         <label for="death" style="color:red;">Please attach the death certificate of Registered Employee:</label><br>
-         <input type="file" name="deathcert" id="death" required>
-      </div>
-      
-      <button type="button" class="btn btn-primary w-100" onclick="goToNextSection(3)">Confirm and Proceed</button>
-   </form>
-</div>
-
-      <!-- Third Section: Image Capture -->
-      <div id="section3" class="form-section">
-         <h3>Step 3: Capture Image</h3>
-         <div class="container">
-            <div class="row">
-               <div class="col-lg-6" align="center">
-                  <label>Capture live photo</label>
-                  <div id="my_camera" class="pre_capture_frame"></div>
-                  <p id="camera_error" style="color: red; display: none;">Camera access denied. Please allow permission and try again.</p>
-
-               </div>
-               <div class="col-lg-6" align="center">
-                  <label>Result</label>
-                  <div id="results">
-                     <img class="after_capture_frame" src="placeholder.png" />
-                  </div>
-                  <br>
-               </div>
-               <input type="button" class="btn btn-info btn-round btn-file col-6 mx-auto my-3" value="Take Snapshot" onClick="take_snapshot()">
-               <form id="imageForm" method="POST" class="col-12" enctype="multipart/form-data">
-                  <!-- Hidden file input -->
-                  <input type="hidden" class="hidman" name="man_no">
-                  <input type="hidden" class="hidbdate" name="birth_date">
-                  <input type="hidden" class="hidname" name="name">
-                  <input type="hidden" class="hidadd" name="aadhar_no">
-                  <input type="hidden" class="hidpan" name="pan_no">
-                  <input type="hidden" class="hidmob" name="mobile">
-                  <input type="hidden" class="hidip" name="ip" value=<?= $ip ?>>
-                  <input type="file" name="image_file" id="image_file" style="display: none;" required>
-                  <button type="submit" class="btn btn-success w-100" name='imagesub'>Save Picture</button>
-               </form>
-            </div><!--  end row -->
-         </div>
-      </div>
-
-      <script>
+      <!-- <script>
          // Function to switch sections
          function goToNextSection(sectionNumber) {
             $('.form-section').removeClass('active');
@@ -230,8 +265,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['imagesub'])) {
             document.querySelector('.hidpan').value = document.querySelector('#section2Form [name="pan_no"]').value;
             document.querySelector('.hidmob').value = document.querySelector('#section2Form [name="mobile"]').value;
          }
-      </script>
-      <script language="JavaScript">
+      </script> -->
+      <!-- <script language="JavaScript">
          // Configure webcam settings
          Webcam.set({
             width: 350,
@@ -274,39 +309,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['imagesub'])) {
                fileInput.files = dataTransfer.files;
             });
          }
-      </script>
+      </script> -->
       <script>
          if (window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);
          }
       </script>
       <script>
-   function toggleSections() {
-      // Get selected value
-      const selectedOption = document.querySelector('input[name="check"]:checked').value;
+         function toggleSections() {
+            // Get selected value
+            const selectedOption = document.querySelector('input[name="check"]:checked').value;
 
-      // Get sections
-      const employeeSection = document.querySelector('.employee');
-      const spouseSection = document.querySelector('.spouse');
-      const onlySpouseSection = document.querySelector('.onlyspouse');
+            // Get sections
+            const employeeSection = document.querySelector('.employee');
+            const spouseSection = document.querySelector('.spouse');
+            const onlySpouseSection = document.querySelector('.onlyspouse');
+            const addressSection = document.querySelector('.address');
 
-      // Hide all sections initially
-      employeeSection.style.display = 'none';
-      spouseSection.style.display = 'none';
-      onlySpouseSection.style.display = 'none';
+            // Hide all sections initially
+            employeeSection.style.display = 'none';
+            spouseSection.style.display = 'none';
+            onlySpouseSection.style.display = 'none';
+            addressSection.style.display = 'none';
 
-      // Show sections based on selected option
-      if (selectedOption === 'both') {
-         employeeSection.style.display = 'block';
-         spouseSection.style.display = 'block';
-      } else if (selectedOption === 'employee') {
-         employeeSection.style.display = 'block';
-      } else if (selectedOption === 'spouse') {
-         spouseSection.style.display = 'block';
-         onlySpouseSection.style.display = 'block';
-      }
-   }
-</script>
+            // Show and set required attributes based on the selected option
+            if (selectedOption === 'both') {
+               showSection(employeeSection, true);
+               showSection(spouseSection, true);
+               showSection(addressSection, true);
+               showSection(onlySpouseSection, false);
+            } else if (selectedOption === 'employee') {
+               showSection(employeeSection, true);
+               showSection(spouseSection, false);
+               showSection(onlySpouseSection, false);
+               showSection(addressSection, true);
+            } else if (selectedOption === 'spouse') {
+               showSection(spouseSection, true);
+               showSection(onlySpouseSection, true);
+               showSection(employeeSection, false);
+               showSection(addressSection, true);
+            }
+         }
+
+         function showSection(section, isRequired) {
+            section.style.display = isRequired ? 'block' : 'none';
+            const inputs = section.querySelectorAll('input, select');
+            inputs.forEach(input => {
+               if (isRequired) {
+                  input.setAttribute('required', 'required');
+               } else {
+                  input.removeAttribute('required');
+               }
+            });
+         }
+      </script>
 </body>
 
 </html>
