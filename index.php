@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
    $_SESSION['cadre_employee'] = $_POST['cadre_employee'] ?? null;
    $_SESSION['name_spouse'] = $_POST['name_spouse'] ?? null;
    $_SESSION['aadhar_no_spouse'] = $_POST['aadhar_no_spouse'] ?? null;
-   $_SESSION['dob_spouse'] = $_POST['pan_no_spouse'] ?? null;
+   $_SESSION['dob_spouse'] = $_POST['dob_spouse'] ?? null;
    $_SESSION['mobile_spouse'] = $_POST['mobile_spouse'] ?? null;
    $_SESSION['dod_employee'] = $_POST['dod_employee'] ?? null;
    if (isset($_FILES['deathcert'])) {
@@ -63,36 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
    header('Location: capture.php');
    exit();
 }
-// Handle form submission to process the file upload and display all form data
-// if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['imagesub'])) {
-//    // Check if the image file is uploaded
-//    if (isset($_FILES['image_file'])) {
-//       $image = $_FILES['image_file'];
-
-//       // Define the upload directory
-//       $target_dir = "capture_images/";
-//       $target_file = $target_dir . uniqid() . ".png";
-
-//       // Move the uploaded file to the target directory
-//       if (move_uploaded_file($image['tmp_name'], $target_file)) {
-//          echo "Image uploaded successfully. File path: " . $target_file . "<br>";
-//       } else {
-//          echo "Error: Failed to upload the image.<br>";
-//       }
-//    } else {
-//       echo "Error: No image file provided.<br>";
-//    }
-
-//    // Echo all form fields received from the POST request
-//    $fields = ['man_no', 'birth_date', 'name', 'aadhar_no', 'pan_no', 'mobile', 'ip'];
-//    foreach ($fields as $field) {
-//       if (isset($_POST[$field])) {
-//          echo ucfirst(str_replace("_", " ", $field)) . ": " . htmlspecialchars($_POST[$field]) . "<br>";
-//       } else {
-//          echo ucfirst(str_replace("_", " ", $field)) . ": Not provided<br>";
-//       }
-//    }
-// }
 
 ?>
 
@@ -224,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
                <label>Date of Death</label>
                <input type="date" class="form-control" name="dod_employee" required>
                <label for="death" style="color:red;">Please attach the death certificate of Registered Employee:</label><br>
-               <input type="file" name="deathcert" id="death" required>
+               <input type="file" accept=".pdf, image/*" name="deathcert" id="death" required>
             </div>
 
             <!-- Address Section -->
@@ -239,8 +209,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
                <label>whatsapp Number:</label><br>
                <input type="text" class="form-control" name="whatsapp_employee">
             </div>
-
-            <button type="submit" class="btn btn-primary w-100" name="proceed">Confirm and Proceed</button>
+            <div class="w-100 text-center mb-5" aria-label="Basic example">
+    <a href="login.php" class="btn btn-primary px-4">Go Back</a>
+    <button type="submit" class="btn btn-success px-4" name="proceed">Confirm and Proceed</button>
+</div>
          </form>
       </div>
 
