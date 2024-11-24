@@ -90,11 +90,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['imagesub'])) {
         border: none;
         padding: 10px 20px;
     }
+    
+    .imgc img{
+        width: 100%;
+    }
 </style>
 
 <body>
     <div id="section3" class="form-section">
         <h3 class="h4 text-center">Step 3: Capture Image</h3>
+        <img src="guide.png" alt="guide" style="width:100%; max-width:1200px; margin:10px auto;">
         <form id="imageForm" method="POST" class="col-12" enctype="multipart/form-data">
             <div class="container">
 

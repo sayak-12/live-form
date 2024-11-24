@@ -96,13 +96,32 @@ function isDisabled($value)
     <script src="./bootstrap/js/bootstrap.min.js"></script>
     <script src="printJS/jspdf.umd.min.js"></script>
     <script src="printJS/html2canvas.min.js"></script>
+<style>
+.date{
+    font-size: 1.1em;
+}
 
+.date span{
+border-bottom: 1px dashed #000;
+}
+#printJS-form {
+    width: 100%;
+    max-width: 1200px; /* Matches the PC view width */
+    margin: 0 auto; /* Center it */
+}
+#printJS-form.override .col-md-6{
+        -webkit-box-flex: 0;
+        flex: 0 0 50%;
+        max-width: 50%;
+}
+</style>
 </head>
 
 <body>
     <div class="container mt-5">
-        <h2 class="mb-4 text-center">Preview Live Form</h2>
         <form method="post" enctype="multipart/form-data" id="printJS-form">
+        <img src="./Garden Reach Ship.jpg" alt="header" style="width:100%;">
+        <div class="d-flex justify-content-end date"><b>Date:</b>&nbsp;<span><?= date('d/m/Y') ?></span></div>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="managerNumber" class="form-label">Employee Number</label>
@@ -241,21 +260,21 @@ function isDisabled($value)
         </form>
     </div>
     <script>
-        document.getElementById('download-pdf').addEventListener('click', function () {
+document.getElementById('download-pdf').addEventListener('click', function () {
     const { jsPDF } = window.jspdf;
 
     // Capture the form element
     const formElement = document.getElementById('printJS-form');
+    formElement.classList.add('override');
+    // Temporarily apply a fixed width for consistent rendering
+    const originalWidth = formElement.style.width;
+    const originalTransform = formElement.style.transform;
+    formElement.style.width = '1024px'; // Set width as per PC view
+    formElement.style.transform = 'scale(1)'; // Reset scaling for consistency
+    formElement.style.transformOrigin = 'top left'; // Avoid distortions
 
     // Temporarily hide buttons and other unwanted elements
     document.querySelectorAll('.exclude-from-pdf').forEach(el => el.style.display = 'none');
-
-    // Add a heading before generating the PDF
-    const heading = document.createElement('h2');
-    heading.textContent = 'Preview Live Form';
-    heading.style.textAlign = 'center';
-    heading.style.marginBottom = '20px';
-    formElement.insertBefore(heading, formElement.firstChild);
 
     // Define padding and quality
     const padding = 20; // Increase padding for better readability
@@ -263,7 +282,7 @@ function isDisabled($value)
 
     // Capture the form with html2canvas
     html2canvas(formElement, {
-        scale: 3, // Higher scale for better quality
+        scale: 1, // Higher scale for better quality
         useCORS: true,
         allowTaint: true,
         scrollY: -window.scrollY,
@@ -286,12 +305,13 @@ function isDisabled($value)
         // Add the image with calculated scaling and padding
         pdf.addImage(imgData, 'JPEG', padding, padding, imgWidth, imgHeight);
 
-        // Restore hidden elements and remove temporary heading
+        // Restore hidden elements and revert the temporary styles
         document.querySelectorAll('.exclude-from-pdf').forEach(el => el.style.display = '');
-        heading.remove();
-
+        formElement.style.width = originalWidth;
+        formElement.style.transform = originalTransform;
+        formElement.classList.remove('override');
         // Save the optimized PDF
-        pdf.save('Employee_Spouse_Details.pdf');
+        pdf.save('<?= $man ?>-Application_form.pdf');
     });
 });
 

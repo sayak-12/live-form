@@ -210,9 +210,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
                <input type="text" class="form-control" name="whatsapp_employee">
             </div>
             <div class="w-100 text-center mb-5" aria-label="Basic example">
-    <a href="login.php" class="btn btn-primary px-4">Go Back</a>
-    <button type="submit" class="btn btn-success px-4" name="proceed">Confirm and Proceed</button>
-</div>
+               <a href="login.php" class="btn btn-primary px-4">Go Back</a>
+               <button type="submit" class="btn btn-success px-4" name="proceed">Confirm and Proceed</button>
+            </div>
          </form>
       </div>
 
@@ -327,7 +327,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
             section.style.display = isRequired ? 'block' : 'none';
             const inputs = section.querySelectorAll('input, select');
             inputs.forEach(input => {
-               if (isRequired) {
+               // Exclude specific inputs from being required
+               if (isRequired && !['email_employee', 'whatsapp_employee'].includes(input.name)) {
                   input.setAttribute('required', 'required');
                } else {
                   input.removeAttribute('required');
