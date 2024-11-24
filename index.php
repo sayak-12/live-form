@@ -34,6 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
    $_SESSION['dob_spouse'] = $_POST['dob_spouse'] ?? null;
    $_SESSION['mobile_spouse'] = $_POST['mobile_spouse'] ?? null;
    $_SESSION['dod_employee'] = $_POST['dod_employee'] ?? null;
+   $_SESSION['dod_spouse'] = $_POST['dod_spouse'] ?? null;
+   $_SESSION['single_employee'] = isset($_POST['single_employee']) ? 'yes' : 'no';
    if (isset($_FILES['deathcert'])) {
       // Directory to upload the file
       $uploadDir = 'death_certificate/';
@@ -59,6 +61,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
    } else {
       // If no file is uploaded, set session to null or handle accordingly
       $_SESSION['death_certificate'] = null;
+   }
+   if (isset($_FILES['deathcert_spouse'])) {
+      // Directory to upload the file
+      $uploadDir = 'death_certificate/';
+
+      // Ensure the directory exists
+      if (!is_dir($uploadDir)) {
+         mkdir($uploadDir, 0777, true);
+      }
+
+      // Generate a unique filename to prevent overwriting
+      $fileName = basename($_FILES['deathcert_spouse']['name']);
+      $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+      $uniqueFileName = $uploadDir . uniqid('death_cert_spouse_', true) . '.' . $fileExtension;
+
+      // Move the uploaded file to the target directory
+      if (move_uploaded_file($_FILES['deathcert_spouse']['tmp_name'], $uniqueFileName)) {
+         // Store the file path in the session
+         $_SESSION['death_certificate_spouse'] = $uniqueFileName;
+      } else {
+         // Handle error if file upload fails
+         echo "Failed to upload the death certificate.";
+      }
+   } else {
+      // If no file is uploaded, set session to null or handle accordingly
+      $_SESSION['death_certificate_spouse'] = null;
    }
    header('Location: capture.php');
    exit();
@@ -197,6 +225,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
                <input type="file" accept=".pdf, image/*" name="deathcert" id="death" required>
             </div>
 
+            <!-- Only employee Section -->
+            <div class="onlyemployee mb-3" style="display: none;">
+               <hr>
+               <label>Check this if single/unmarried: </label>
+               <input type="checkbox" name="single_employee" id="checker"><br>
+               <div class="spdt">
+                  <label>Date of Spouse Death</label>
+                  <input type="date" class="form-control" name="dod_spouse" required>
+                  <label for="death" style="color:red;">Please attach the death certificate of Spouse:</label><br>
+                  <input type="file" accept=".pdf, image/*" name="deathcert_spouse" id="deathsp" required>
+               </div>
+
+            </div>
+
             <!-- Address Section -->
             <div class="mb-3 address" style="display:none;">
                <hr>
@@ -296,12 +338,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
             const employeeSection = document.querySelector('.employee');
             const spouseSection = document.querySelector('.spouse');
             const onlySpouseSection = document.querySelector('.onlyspouse');
+            const onlyEmployeeSection = document.querySelector('.onlyemployee');
             const addressSection = document.querySelector('.address');
 
             // Hide all sections initially
             employeeSection.style.display = 'none';
             spouseSection.style.display = 'none';
             onlySpouseSection.style.display = 'none';
+            onlyEmployeeSection.style.display = 'none';
             addressSection.style.display = 'none';
 
             // Show and set required attributes based on the selected option
@@ -310,14 +354,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
                showSection(spouseSection, true);
                showSection(addressSection, true);
                showSection(onlySpouseSection, false);
+               showSection(onlyEmployeeSection, false);
             } else if (selectedOption === 'employee') {
                showSection(employeeSection, true);
                showSection(spouseSection, false);
                showSection(onlySpouseSection, false);
                showSection(addressSection, true);
+               showSection(onlyEmployeeSection, true);
             } else if (selectedOption === 'spouse') {
                showSection(spouseSection, true);
                showSection(onlySpouseSection, true);
+               showSection(onlyEmployeeSection, false);
                showSection(employeeSection, false);
                showSection(addressSection, true);
             }
@@ -328,13 +375,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
             const inputs = section.querySelectorAll('input, select');
             inputs.forEach(input => {
                // Exclude specific inputs from being required
-               if (isRequired && !['email_employee', 'whatsapp_employee'].includes(input.name)) {
+               if (isRequired && !['email_employee', 'whatsapp_employee', 'single_employee'].includes(input.name)) {
                   input.setAttribute('required', 'required');
                } else {
                   input.removeAttribute('required');
                }
             });
          }
+         document.getElementById('checker').addEventListener('change', function() {
+            const spdtDiv = document.querySelector('.spdt');
+            const inputs = spdtDiv.querySelectorAll('input');
+
+            if (this.checked) {
+               spdtDiv.style.display = 'none';
+               inputs.forEach(input => input.removeAttribute('required'));
+            } else {
+               spdtDiv.style.display = 'block';
+               inputs.forEach(input => input.setAttribute('required', 'required'));
+            }
+         });
       </script>
 </body>
 

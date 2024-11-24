@@ -23,7 +23,10 @@ $aadhar_no_spouse = $_SESSION['aadhar_no_spouse'] ?? 'N/A';
 $dob_spouse = $_SESSION['dob_spouse'] ?? 'N/A';
 $mobile_spouse = $_SESSION['mobile_spouse'] ?? 'N/A';
 $dod_employee = $_SESSION['dod_employee'] ?? 'N/A';
+$dod_spouse = $_SESSION['dod_spouse'] ?? 'N/A';
+$single = $_SESSION['single_employee'];
 $death_certificate = $_SESSION['death_certificate'] ?? 'N/A';
+$death_certificate_spouse = $_SESSION['death_certificate_spouse'] ?? 'N/A';
 $imagepath = $_SESSION['image_path'] ?? '';
 $imagepath1 = $_SESSION['image_path1'] ?? '';
 
@@ -31,13 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
     $sql = "INSERT INTO application (
         name_employee, aadhar_employee, man_no, dob_employee, dor, designation, category,
         name_spouse, aadhar_spouse, dob_spouse, mob_spouse, address, mobile, email, whatsapp,
-        type, pic_employee, pic_spouse, dod_employee, death_certificate
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        type, pic_employee, pic_spouse, single, dod_employee, dod_spouse, death_certificate, death_certificate_spouse
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
 
     // Bind parameters
     $stmt->bind_param(
-        "ssssssssssssssssssss",
+        "sssssssssssssssssssssss",
         $name_employee,
         $aadhar_no_employee,
         $man,
@@ -56,12 +59,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         $type,
         $imagepath,
         $imagepath1,
+        $single,
         $dod_employee,
-        $death_certificate
+        $dod_spouse,
+        $death_certificate,
+        $death_certificate_spouse,
     );
 
     if ($stmt->execute()) {
-        
+
         // Redirect to preview page
         session_unset();
         session_destroy();
@@ -96,32 +102,36 @@ function isDisabled($value)
     <script src="./bootstrap/js/bootstrap.min.js"></script>
     <script src="printJS/jspdf.umd.min.js"></script>
     <script src="printJS/html2canvas.min.js"></script>
-<style>
-.date{
-    font-size: 1.1em;
-}
+    <style>
+        .date {
+            font-size: 1.1em;
+        }
 
-.date span{
-border-bottom: 1px dashed #000;
-}
-#printJS-form {
-    width: 100%;
-    max-width: 1200px; /* Matches the PC view width */
-    margin: 0 auto; /* Center it */
-}
-#printJS-form.override .col-md-6{
-        -webkit-box-flex: 0;
-        flex: 0 0 50%;
-        max-width: 50%;
-}
-</style>
+        .date span {
+            border-bottom: 1px dashed #000;
+        }
+
+        #printJS-form {
+            width: 100%;
+            max-width: 1200px;
+            /* Matches the PC view width */
+            margin: 0 auto;
+            /* Center it */
+        }
+
+        #printJS-form.override .col-md-6 {
+            -webkit-box-flex: 0;
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container mt-5">
         <form method="post" enctype="multipart/form-data" id="printJS-form">
-        <img src="./Garden Reach Ship.jpg" alt="header" style="width:100%;">
-        <div class="d-flex justify-content-end date"><b>Date:</b>&nbsp;<span><?= date('d/m/Y') ?></span></div>
+            <img src="./Garden Reach Ship.jpg" alt="header" style="width:100%;">
+            <div class="d-flex justify-content-end date"><b>Date:</b>&nbsp;<span><?= date('d/m/Y') ?></span></div>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="managerNumber" class="form-label">Employee Number</label>
@@ -168,7 +178,7 @@ border-bottom: 1px dashed #000;
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="email" class="form-label">Employee Email</label>
-                        <input type="email" class="form-control" id="email" value="<?= $email_employee ?>" <?= isDisabled($email_employee) ?>>
+                        <input type="text" class="form-control" id="email" value="<?= $email_employee ?>" <?= isDisabled($email_employee) ?>>
                     </div>
                     <div class="col-md-6">
                         <label for="whatsapp" class="form-label">Employee WhatsApp</label>
@@ -187,7 +197,7 @@ border-bottom: 1px dashed #000;
                     </div>
                 </div>
 
-                
+
 
 
             </div>
@@ -236,16 +246,44 @@ border-bottom: 1px dashed #000;
                 </div>
 
             </div>
+            <div style="display: <?= ($type == 'employee') ? "block" : "none" ?>">
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="dod_spouse" class="form-label">Are you Single</label>
+                        <input type="text" class="form-control" id="single" value="<?= $single ?>" <?= isDisabled($single) ?>>
+                    </div>
+                </div>
+                <div class="spdt"  style="display: <?= ($single == 'yes') ? "none" : "block" ?>">
+                    <h4 class="mt-4 spousedeath">Spouse Death Details</h4>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="dod_spouse" class="form-label">Date of Death (DOD) of Spouse</label>
+                            <input type="text" class="form-control" id="dod_spouse" value="<?= $dod_spouse ?>" <?= isDisabled($dod_spouse) ?>>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="deathCert_spouse" class="form-label">Death Certificate of Spouse</label>
+                            <?php if (!empty($death_certificate_spouse)) { ?>
+                                <a href="<?= htmlspecialchars($death_certificate_spouse) ?>" class="btn btn-primary d-flex" style="width:max-content;" download target="_blank">Download Death Certificate</a>
+                            <?php } else { ?>
+                                <p class="text-muted">No certificate available</p>
+                            <?php } ?>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
 
             <h4 class="mt-4">Uploaded Images</h4>
             <div class="row mb-3">
-                <?php if ($imagepath && ($type=='employee' || $type=='both')): ?>
+                <?php if ($imagepath && ($type == 'employee' || $type == 'both')): ?>
                     <div class="col-md-6  d-flex flex-column">
                         <label class="form-label">Employee Picture</label>
                         <img src="<?= $imagepath ?>" alt="Uploaded Image 1" class="img-thumbnail me-2" style="max-width: 200px; aspect-ratio:7/5; object-fit:cover;">
                     </div>
                 <?php endif; ?>
-                <?php if ($imagepath1 && ($type=='spouse' || $type=='both')): ?>
+                <?php if ($imagepath1 && ($type == 'spouse' || $type == 'both')): ?>
                     <div class="col-md-6 d-flex flex-column">
                         <label class="form-label">Spouse Picture</label>
                         <img src="<?= $imagepath1 ?>" alt="Uploaded Image 2" class="img-thumbnail me-2" style="max-width: 200px; aspect-ratio:7/5; object-fit:cover;">
@@ -260,61 +298,62 @@ border-bottom: 1px dashed #000;
         </form>
     </div>
     <script>
-document.getElementById('download-pdf').addEventListener('click', function () {
-    const { jsPDF } = window.jspdf;
+        document.getElementById('download-pdf').addEventListener('click', function() {
+            const {
+                jsPDF
+            } = window.jspdf;
 
-    // Capture the form element
-    const formElement = document.getElementById('printJS-form');
-    formElement.classList.add('override');
-    // Temporarily apply a fixed width for consistent rendering
-    const originalWidth = formElement.style.width;
-    const originalTransform = formElement.style.transform;
-    formElement.style.width = '1024px'; // Set width as per PC view
-    formElement.style.transform = 'scale(1)'; // Reset scaling for consistency
-    formElement.style.transformOrigin = 'top left'; // Avoid distortions
+            // Capture the form element
+            const formElement = document.getElementById('printJS-form');
+            formElement.classList.add('override');
+            // Temporarily apply a fixed width for consistent rendering
+            const originalWidth = formElement.style.width;
+            const originalTransform = formElement.style.transform;
+            formElement.style.width = '1024px'; // Set width as per PC view
+            formElement.style.transform = 'scale(1)'; // Reset scaling for consistency
+            formElement.style.transformOrigin = 'top left'; // Avoid distortions
 
-    // Temporarily hide buttons and other unwanted elements
-    document.querySelectorAll('.exclude-from-pdf').forEach(el => el.style.display = 'none');
+            // Temporarily hide buttons and other unwanted elements
+            document.querySelectorAll('.exclude-from-pdf').forEach(el => el.style.display = 'none');
 
-    // Define padding and quality
-    const padding = 20; // Increase padding for better readability
-    const pdfQuality = 1.0; // Set quality to high (1.0)
+            // Define padding and quality
+            const padding = 20; // Increase padding for better readability
+            const pdfQuality = 1.0; // Set quality to high (1.0)
 
-    // Capture the form with html2canvas
-    html2canvas(formElement, {
-        scale: 1, // Higher scale for better quality
-        useCORS: true,
-        allowTaint: true,
-        scrollY: -window.scrollY,
-    }).then(canvas => {
-        const imgData = canvas.toDataURL('image/jpeg', pdfQuality);
-        const pdf = new jsPDF('p', 'mm', 'a4');
+            // Capture the form with html2canvas
+            html2canvas(formElement, {
+                scale: 1, // Higher scale for better quality
+                useCORS: true,
+                allowTaint: true,
+                scrollY: -window.scrollY,
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', pdfQuality);
+                const pdf = new jsPDF('p', 'mm', 'a4');
 
-        // Calculate dimensions with margins
-        const pageWidth = pdf.internal.pageSize.getWidth() - 2 * padding;
-        const pageHeight = pdf.internal.pageSize.getHeight() - 2 * padding;
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
+                // Calculate dimensions with margins
+                const pageWidth = pdf.internal.pageSize.getWidth() - 2 * padding;
+                const pageHeight = pdf.internal.pageSize.getHeight() - 2 * padding;
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
 
-        // Determine optimal scale to fit content within PDF page
-        const scale = Math.min(pageWidth / canvasWidth, pageHeight / canvasHeight);
+                // Determine optimal scale to fit content within PDF page
+                const scale = Math.min(pageWidth / canvasWidth, pageHeight / canvasHeight);
 
-        const imgWidth = canvasWidth * scale;
-        const imgHeight = canvasHeight * scale;
+                const imgWidth = canvasWidth * scale;
+                const imgHeight = canvasHeight * scale;
 
-        // Add the image with calculated scaling and padding
-        pdf.addImage(imgData, 'JPEG', padding, padding, imgWidth, imgHeight);
+                // Add the image with calculated scaling and padding
+                pdf.addImage(imgData, 'JPEG', padding, padding, imgWidth, imgHeight);
 
-        // Restore hidden elements and revert the temporary styles
-        document.querySelectorAll('.exclude-from-pdf').forEach(el => el.style.display = '');
-        formElement.style.width = originalWidth;
-        formElement.style.transform = originalTransform;
-        formElement.classList.remove('override');
-        // Save the optimized PDF
-        pdf.save('<?= $man ?>-Application_form.pdf');
-    });
-});
-
+                // Restore hidden elements and revert the temporary styles
+                document.querySelectorAll('.exclude-from-pdf').forEach(el => el.style.display = '');
+                formElement.style.width = originalWidth;
+                formElement.style.transform = originalTransform;
+                formElement.classList.remove('override');
+                // Save the optimized PDF
+                pdf.save('<?= $man ?>-Application_form.pdf');
+            });
+        });
     </script>
 </body>
 
