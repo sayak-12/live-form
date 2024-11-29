@@ -229,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['proceed'])) {
             <div class="onlyemployee mb-3" style="display: none;">
                <hr>
                <label>Check this if single/unmarried: </label>
-               <input type="checkbox" name="single_employee" id="checker"><br>
+               <input type="checkbox" name="single_employee" id="checker" checked="<?= $resultspo['BENEFICIARY NAME'] ? true : false ?>" readonly><br>
                <div class="spdt">
                   <label>Date of Spouse Death</label>
                   <input type="date" class="form-control" name="dod_spouse" required>
